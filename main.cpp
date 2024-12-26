@@ -1,13 +1,17 @@
 #include <iostream>
+#include <vector>
 class Value {
 public:
   float data;
   float grad;
   char op;
+  char label;
   Value *prev[2];
 
-  Value(float _data) : data(_data), op(' '), prev{} {}
-  Value(float _data, char _op, Value *_prev[]) : data(_data), op(_op) {
+  Value(float _data, char _label)
+      : data(_data), label(_label), grad(0.0), op(' '), prev{} {}
+  Value(float _data, char _op, Value *_prev[])
+      : data(_data), grad(0.0), op(_op) {
     for (int i = 0; i < 2; i++) {
       prev[i] = _prev[i];
     }
@@ -24,13 +28,40 @@ public:
   }
 };
 
+using namespace std;
+
+void back_propagate(Value *root) {
+  switch (root->op) {
+  case '+':
+    root->prev[0]->grad = root->grad;
+    root->prev[1]->grad = root->grad;
+    break;
+  case '*':
+    root->prev[0]->grad = root->prev[1]->data * root->grad;
+    root->prev[1]->grad = root->prev[0]->data * root->grad;
+    break;
+  default:
+    return;
+  }
+
+  back_propagate(root->prev[0]);
+  back_propagate(root->prev[1]);
+}
+
 int main() {
-  Value a(3.0);
-  Value b(5.0);
+  vector<Value *> topo;
 
-  Value c = a * b;
+  Value a(4.0, 'A');
+  Value b(5.0, 'B');
+  Value c(2.0, 'C');
 
-  std::cout << c.prev[0]->data << std::endl;
+  Value d = a + b;
+  Value e = d * c;
+
+  e.grad = 1.0;
+  back_propagate(&e);
+
+  cout << b.grad;
 
   return 0;
 }
